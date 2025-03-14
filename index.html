@@ -1,69 +1,54 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>WebRTC Video Chat</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Client</title>
 </head>
 <body>
-    <video id="localVideo" autoplay playsinline></video>
-    <video id="remoteVideo" autoplay playsinline></video>
-    
+    <h2>WebSocket Client</h2>
     <button onclick="connectWebSocket()">Connect</button>
-    <button onclick="startCall()">Start Call</button>
+    <button onclick="sendMessage()">Send Message</button>
+    <button onclick="disconnectWebSocket()">Disconnect</button>
+    <p id="status">Status: Disconnected</p>
+    <p id="messages"></p>
 
     <script>
         let socket;
-        let peerConnection = new RTCPeerConnection();
 
         function connectWebSocket() {
             socket = new WebSocket("wss://socket-lsmb.onrender.com/ws");
 
-            socket.onopen = () => {
-                console.log("WebSocket Connected!");
-                alert("Connected to WebSocket!");
+            socket.onopen = function() {
+                document.getElementById("status").innerText = "Status: Connected";
+                alert("WebSocket Connected");
             };
 
-            socket.onmessage = async (event) => {
-                let data = JSON.parse(event.data);
-                if (data.type === "offer") {
-                    await peerConnection.setRemoteDescription(new RTCSessionDescription(data));
-                    let answer = await peerConnection.createAnswer();
-                    await peerConnection.setLocalDescription(answer);
-                    socket.send(JSON.stringify(peerConnection.localDescription));
-                } else if (data.type === "answer") {
-                    await peerConnection.setRemoteDescription(new RTCSessionDescription(data));
-                } else if (data.type === "candidate") {
-                    await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-                }
+            socket.onmessage = function(event) {
+                document.getElementById("messages").innerHTML += "<br>Server: " + event.data;
+                alert("Message from server: " + event.data);
             };
 
-            socket.onerror = (error) => console.log("WebSocket Error:", error);
-            socket.onclose = () => console.log("WebSocket Closed!");
+            socket.onclose = function() {
+                document.getElementById("status").innerText = "Status: Disconnected";
+                alert("WebSocket Disconnected");
+            };
         }
 
-        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-            .then(stream => {
-                document.getElementById("localVideo").srcObject = stream;
-                stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-            });
-
-        peerConnection.onicecandidate = event => {
-            if (event.candidate && socket) {
-                socket.send(JSON.stringify({ type: "candidate", candidate: event.candidate }));
+        function sendMessage() {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send("Hello Server!");
+                alert("Message sent to server");
+            } else {
+                alert("WebSocket is not connected");
             }
-        };
+        }
 
-        peerConnection.ontrack = event => {
-            document.getElementById("remoteVideo").srcObject = event.streams[0];
-        };
-
-        async function startCall() {
-            if (!socket || socket.readyState !== WebSocket.OPEN) {
-                alert("Please connect to WebSocket first!");
-                return;
+        function disconnectWebSocket() {
+            if (socket) {
+                socket.close();
+                alert("WebSocket Disconnected");
             }
-            let offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
-            socket.send(JSON.stringify(offer));
         }
     </script>
 </body>
