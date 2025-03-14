@@ -5,7 +5,10 @@ app = FastAPI()
 
 # List to store active connections
 active_connections: List[WebSocket] = []
-
+@app.get("/")
+async def get():
+    return FileResponse("index.html")  # Ensure index.html is in the same folder
+    
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     """Handles WebSocket connections"""
