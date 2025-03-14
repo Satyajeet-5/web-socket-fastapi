@@ -1,34 +1,33 @@
 from fastapi import FastAPI, WebSocket
 from fastapi.responses import HTMLResponse
 import uvicorn
-import uuid  # For generating unique client IDs
+import uuid
+import os
 
 app = FastAPI()
 
-# Step 1: Serve the HTML file
 @app.get("/")
 async def get():
     return HTMLResponse(open("index.html").read())
 
-# Step 2-9: WebSocket Connection Handling
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-    client_id = str(uuid.uuid4())  # Generate a unique ID for the client
-    print(f"Client {client_id} connected")  # Step 3: Server accepts connection
-    await websocket.send_text(f"Welcome Client {client_id} to the FastAPI WebSocket Server!")  # Step 4: Server sends response
+    client_id = str(uuid.uuid4())
+    print(f"Client {client_id} connected")
+    await websocket.send_text(f"Welcome Client {client_id} to the FastAPI WebSocket Server!")
 
     try:
         while True:
-            message = await websocket.receive_text()  # Step 5: Server receives message
-            print(f"Client {client_id} sent: {message}")  # Print message with client ID
-            await websocket.send_text(f"Server received from {client_id}: {message}")  # Step 7: Server sends response
+            message = await websocket.receive_text()
+            print(f"Client {client_id} sent: {message}")
+            await websocket.send_text(f"Server received from {client_id}: {message}")
     except Exception:
-        print(f"Client {client_id} disconnected")  # Step 9: Server handles disconnection
+        print(f"Client {client_id} disconnected")
 
-# Step 10: Run the server
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.environ.get("PORT", 10000))  # Render assigns a dynamic port
+    uvicorn.run(app, host="0.0.0.0", port=port)
 
 '''from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
