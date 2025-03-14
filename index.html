@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Chat</title>
+</head>
+<body>
+    <h2>WebSocket Chat</h2>
+    <input type="text" id="messageInput" placeholder="Enter message">
+    <button onclick="sendMessage()">Send</button>
+    <ul id="messages"></ul>
+
+    <script>
+        // Connect to FastAPI WebSocket Server
+        let socket = new WebSocket("ws://localhost:8000/ws");
+
+        socket.onopen = function() {
+            console.log("Connected to WebSocket Server");
+        };
+
+        socket.onmessage = function(event) {
+            console.log("Message received: " + event.data);
+
+            // Display message in chat
+            let messagesList = document.getElementById("messages");
+            let listItem = document.createElement("li");
+            listItem.textContent = event.data;
+            messagesList.appendChild(listItem);
+        };
+
+        function sendMessage() {
+            let messageInput = document.getElementById("messageInput");
+            let message = messageInput.value;
+
+            socket.send(message);  // Send message to FastAPI WebSocket server
+            messageInput.value = "";
+        }
+    </script>
+</body>
+</html>
