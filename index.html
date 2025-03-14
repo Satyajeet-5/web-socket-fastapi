@@ -1,38 +1,40 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebSocket Chat</title>
 </head>
 <body>
     <h2>WebSocket Chat</h2>
-    <input type="text" id="messageInput" placeholder="Enter message">
+    <button onclick="connectWebSocket()">Connect</button>
+    <input type="text" id="messageInput" placeholder="Type a message">
     <button onclick="sendMessage()">Send</button>
-    <ul id="messages"></ul>
+    <div id="chat"></div>
 
     <script>
-        // Connect to FastAPI WebSocket Server
-        let socket = new WebSocket("ws://socket-lsmb.onrender.com/ws");
+        let socket;
 
-        socket.onopen = function() {
-            console.log("Connected to WebSocket Server");
-        };
+        function connectWebSocket() {
+            socket = new WebSocket("wss://socket-lsmb.onrender.com/ws");  // Change to your Render URL
 
-        socket.onmessage = function(event) {
-            console.log("Message received: " + event.data);
+            socket.onopen = function () {
+                document.getElementById("chat").innerHTML += "<p>Connected!</p>";
+            };
 
-            // Display message in chat
-            let messagesList = document.getElementById("messages");
-            let listItem = document.createElement("li");
-            listItem.textContent = event.data;
-            messagesList.appendChild(listItem);
-        };
+            // 🔹 Modified to receive & display messages in chat
+            socket.onmessage = function (event) {
+                document.getElementById("chat").innerHTML += "<p>" + event.data + "</p>";
+            };
+
+            socket.onclose = function () {
+                document.getElementById("chat").innerHTML += "<p>Connection Closed</p>";
+            };
+        }
 
         function sendMessage() {
-            let messageInput = document.getElementById("messageInput");
-            let message = messageInput.value;
-
-            socket.send(message);  // Send message to FastAPI WebSocket server
-            messageInput.value = "";
+            let message = document.getElementById("messageInput").value;
+            socket.send(message);  // 🔹 Sends message to FastAPI WebSocket
         }
     </script>
 </body>
