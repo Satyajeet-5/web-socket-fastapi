@@ -1,4 +1,75 @@
 <!DOCTYPE html>
+<html>
+<head>
+    <title>WebRTC Video Chat</title>
+</head>
+<body>
+    <video id="localVideo" autoplay playsinline></video>
+    <video id="remoteVideo" autoplay playsinline></video>
+    
+    <button onclick="connectWebSocket()">Connect</button>
+    <button onclick="startCall()">Start Call</button>
+
+    <script>
+        let socket;
+        let peerConnection = new RTCPeerConnection();
+
+        function connectWebSocket() {
+            socket = new WebSocket("wss://socket-lsmb.onrender.com/ws");
+
+            socket.onopen = () => {
+                console.log("WebSocket Connected!");
+                alert("Connected to WebSocket!");
+            };
+
+            socket.onmessage = async (event) => {
+                let data = JSON.parse(event.data);
+                if (data.type === "offer") {
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(data));
+                    let answer = await peerConnection.createAnswer();
+                    await peerConnection.setLocalDescription(answer);
+                    socket.send(JSON.stringify(peerConnection.localDescription));
+                } else if (data.type === "answer") {
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(data));
+                } else if (data.type === "candidate") {
+                    await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                }
+            };
+
+            socket.onerror = (error) => console.log("WebSocket Error:", error);
+            socket.onclose = () => console.log("WebSocket Closed!");
+        }
+
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+            .then(stream => {
+                document.getElementById("localVideo").srcObject = stream;
+                stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+            });
+
+        peerConnection.onicecandidate = event => {
+            if (event.candidate && socket) {
+                socket.send(JSON.stringify({ type: "candidate", candidate: event.candidate }));
+            }
+        };
+
+        peerConnection.ontrack = event => {
+            document.getElementById("remoteVideo").srcObject = event.streams[0];
+        };
+
+        async function startCall() {
+            if (!socket || socket.readyState !== WebSocket.OPEN) {
+                alert("Please connect to WebSocket first!");
+                return;
+            }
+            let offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            socket.send(JSON.stringify(offer));
+        }
+    </script>
+</body>
+</html>
+
+<!--<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -38,4 +109,4 @@
         }
     </script>
 </body>
-</html>
+</html>-->
